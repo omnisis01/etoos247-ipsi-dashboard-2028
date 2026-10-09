@@ -1039,7 +1039,7 @@ function renderFilters() {
 
   // 변화 유형
   const g2 = el('div', 'f-group');
-  g2.innerHTML = '<div class="f-title">2026 대비 변화</div>';
+  g2.innerHTML = '<div class="f-title">2027 대비 변화</div>';
   const r2 = el('div', 'chip-row');
   [['new', '신설', 'new'], ['up', '증원', 'good'], ['down', '감원', 'bad'], ['changed', '전형 변경', 'new'], ['ease', '최저 완화', 'bad'], ['tighten', '최저 강화·신설', 'good']].forEach(([k, lab, cls]) => {
     const c = el('button', 'chip' + (S.changes.has(k) ? ' on ' + cls : ''), esc(lab));
@@ -1755,7 +1755,7 @@ function openModal(i, options = null) {
       <div class="msec official-source"><h4>지원 전 공식 자료 확인</h4>${typeof window.officialLinksHTML === 'function' ? window.officialLinksHTML(r) : '<p class="muted">대학 입학처에서 2027학년도 수시 모집요강과 접수 공지를 확인하세요.</p>'}</div>
       <div class="msec"><div class="kv">
         <dt>전형</dt><dd>${esc(r.jhtype)} · ${esc(r.jhname)}</dd>
-        <dt>모집인원</dt><dd><b>${fmtInt(r.enroll)}명</b> <span class="delta ${d.cls}">${d.txt}</span> <span class="muted">(2026 대비: ${r.dkind === 'changed' ? '전형 변경(개편·개명)' : esc(r.prev || '-')})</span></dd>
+        <dt>모집인원</dt><dd><b>${fmtInt(r.enroll)}명</b> <span class="delta ${d.cls}">${d.txt}</span> <span class="muted">(2027 대비: ${r.dkind === 'changed' ? '전형 변경(개편·개명)' : esc(r.prev || '-')})</span></dd>
         <dt>지원자격</dt><dd>${r.jagyeok ? esc(r.jagyeok) : '<span class="muted">전형명 참조 · 세부 자격은 대학 요강에서 확인하세요</span>'}${r.nsuNo ? ' <span class="delta tighten" title="졸업예정자(현 고3)만 지원 가능 — 재수생 이상 지원 불가">N수불가</span>' : ''}</dd>
         <dt>전형방법</dt><dd>${esc(r.method) || '–'}</dd>
         ${r.dupApply ? `<dt>복수지원</dt><dd>${/불가/.test(r.dupApply)
@@ -1781,7 +1781,7 @@ function openModal(i, options = null) {
         <div class="verdict-note" style="margin-top:8px">※ 입결 하락세·경쟁률 하락·증원·수능최저 강화는 ‘유리’ 신호로, 그 반대는 ‘불리’ 신호로 추정합니다.${r.jhtype === '논술' ? ' <b>단, 논술은 경쟁률 변화를 점수에 넣지 않습니다</b> — 2026 실측에서 논술만 경쟁률과 합격선이 사실상 무관했습니다.' : ''}</div>
         <div class="verdict-note" style="margin-top:4px">※ 다만 실제 입시에서는 입결이 내려간 학과로 오히려 지원이 몰려 경쟁이 폭발하는 경우도 있으니 주의하세요.</div>
       </div>
-      ${r.change ? `<div class="msec"><h4>📝 2026 대비 변경사항(2027)</h4><div class="change-box">${esc(r.change)}</div></div>` : ''}
+      ${r.change ? `<div class="msec"><h4>📝 2027 대비 변경사항(2028 전형계획)</h4><div class="change-box">${esc(r.change)}</div></div>` : ''}
       <div class="msec"><h4>📈 3개년 입결·경쟁률 추이</h4>
         <div class="detail-table-scroll" role="region" aria-label="3개년 입결과 경쟁률 추이표" tabindex="0"><table class="trend-table"><thead><tr><th>구분</th><th>2024</th><th>2025</th><th>2026</th><th>추이</th></tr></thead><tbody>
           ${trendRow(`입결(등급) ${stdTag(r)}${basisWarn(r)}`, [r.g[2], r.g[1], r.g[0]], v => v.toFixed(2), 'var(--primary)')}
