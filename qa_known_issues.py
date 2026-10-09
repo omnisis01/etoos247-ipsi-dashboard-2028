@@ -473,6 +473,13 @@ for _k, _ref in _side.items():
         _sbad.append(f'{_k}: 행 범위 밖 인덱스 {len(_oob)}개 (rows={_nrows})')
     else:
         print(f'  ✓ {_k}: {len(_m)}항목, app.js 가 읽음, 인덱스 전부 범위 내')
+# 대학명 키 사이드맵 — 행 인덱스가 아니라 배선만 본다(2028판 coverage)
+for _k, _ref in {'coverage': 'D.coverage'}.items():
+    _m = D.get(_k)
+    if not _m: print(f'  · {_k}: data.js 에 없음 — 건너뜀'); continue
+    if not re.search(r'\bD\.' + re.escape(_k) + r'\b', _app_src):
+        _sbad.append(f'{_k}: data.js 에 {len(_m)}항목 있는데 app.js 가 {_ref} 를 읽지 않는다(배선 끊김)')
+    else: print(f'  ✓ {_k}: {len(_m)}항목(대학명 키), app.js 가 읽음')
 for _b in _sbad:
     print('  ✗', _b)
 if _sbad:

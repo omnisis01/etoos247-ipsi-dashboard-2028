@@ -1024,3 +1024,7 @@ svg text{fill:var(--text-soft);font-family:var(--font)}
 /* 2027 최종 경쟁률 — 목록 칸 아래 보조줄과 상세카드 안내 상자 */
 .c27-line{font-size:11px;color:var(--text-soft);font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:2px}
 .c27-box{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--surface-2,rgba(127,127,127,.08));font-size:13px}
+
+/* 2028판 — 전형계획 원천에 일부 모집단위만 실린 대학 표시(대학 패널·모달). 점선 = '전체가 아님' */
+.cov-badge{display:inline-block;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:20px;
+  background:var(--new-soft);color:var(--new-ink,var(--new));border:1px dashed var(--new);vertical-align:middle;margin-left:6px;white-space:nowrap}

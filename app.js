@@ -59,6 +59,12 @@ ROWS.forEach(r => {
 });
 /* 대학별 원서접수 기간 — apply_dates.js(fetch_apply_dates.py 생성). 없으면 조용히 비활성. */
 const APPLY = window.IPSI_APPLY || {};
+// 2028판 — 대학별 수록 범위(data.js coverage, 키=대학명). 2028 전형계획 원천은 35개 주요대학만 전수이고 지거국·기타는
+// 의치약한수만 실려 있어(41교가 2027 대비 50% 미만), 그 대학은 '일부 수록' 배지로 알린다. 여기 없는 전형이 폐지된 것이 아니다.
+const COV = D.coverage || {};
+const covBadge = u => (COV[u] && COV[u].partial)
+  ? `<span class="cov-badge" title="2028 전형계획 원천에 이 대학은 ${COV[u].n28}개 모집단위만 실려 있습니다(2027 ${COV[u].n27}개). 의치약한수 등 일부이며, 여기 없는 전형이 폐지된 것은 아닙니다 — 요강판에서 보강됩니다.">전형계획 일부 수록</span>`
+  : '';
 const _DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
 function applyInfo(uni) {
   const a = APPLY[uni];
@@ -1173,7 +1179,7 @@ function uniPanelHTML(label, rows) {
   });
   const typeKeys = [...JHTYPE_ORDER, '기타'].filter(t => byType[t]);
   const ap = applyInfo(uni);
-  return `<div class="panel-head"><h2>🏫 ${esc(label)} 전형별 학과 한눈에</h2>
+  return `<div class="panel-head"><h2>🏫 ${esc(label)} 전형별 학과 한눈에 ${covBadge(uni)}</h2>
       <span class="muted">전형을 누르면 학과 목록이 열립니다</span></div>
     ${ap ? `<div class="uni-apply${ap.early ? ' early' : ''}">🗓️ 원서접수 <b>${ap.txt}</b>${ap.early ? ' <span class="delta tighten">조기마감</span>' : ''} <span class="muted">· ${esc(ap.via)} 접수 기준</span></div>` : ''}
     <div class="uni-cols">${typeKeys.map(t => {
@@ -1739,7 +1745,7 @@ function openModal(i, options = null) {
   const bk = favBucket(i);
   $('#modalCard').innerHTML = `
     <div class="modal-head"><div class="mh-top"><div>
-      <div class="mh-uni">${esc(r.uni)}${campusOf(r) ? ' · ' + esc(campusOf(r)) + ' 캠퍼스' : ''} · ${esc(r.region)} ${esc(r.sigun)}</div>
+      <div class="mh-uni">${esc(r.uni)}${campusOf(r) ? ' · ' + esc(campusOf(r)) + ' 캠퍼스' : ''} · ${esc(r.region)} ${esc(r.sigun)} ${covBadge(r.uni)}</div>
       <h3>${esc(deptDisp(r))}${isIntegrated(r.dept) ? ' <span class="qual-tag" title="개별 학과가 아닌 통합·계열 단위 모집입니다">통합모집</span>' : ''}</h3>
       <div class="modal-admission">${esc(flat(r.jhname))} · ${esc(r.jhtype)}</div>
       <div style="margin-top:7px;display:flex;gap:6px;flex-wrap:wrap">${cats}</div>

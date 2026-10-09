@@ -1358,6 +1358,19 @@ if YEAR == 2027 and os.path.exists(_r27p):   # 2028판은 2027 경쟁률이 c �
             _c27[_i] = [_r27[_k]['c27'], _r27[_k]['ap']]
     print(f"[2027경쟁률] {len(_c27)}/{len(rows)}행 ({len(_c27) / len(rows) * 100:.1f}%) · 원천 {len(_r27)}키")
 
+# 2028판 — 대학별 수록 범위. 2028 원천(전형계획)은 35개 주요대학(분류 35·15/35)만 84~91% 전수이고 지거국 5%·기타 9%
+# (의치약한수만)이라, 75교 중 41교가 2027 대비 50% 미만이다(2026-10-09 실측). 화면은 배지로 알리고 총원 비교에서 제외한다
+# (사용자 결정). 2027 행수는 enroll27.json 5키로 센다. 키=대학명(행 인덱스 아님) — qa_known_issues ⑫ 는 배선만 검사한다.
+_coverage = {}
+if YEAR == 2028:
+    _IUc = SCHEMA.index('uni'); _n28 = {}; _n27 = {}
+    for _r in rows: _u = order['uni'][_r[_IUc]]; _n28[_u] = _n28.get(_u, 0) + 1
+    for _k in _ENROLL26: _u = _k.split('|')[0]; _n27[_u] = _n27.get(_u, 0) + 1
+    for _u, _n in _n28.items():
+        _m = _n27.get(_u, 0); _p = _n / _m if _m else 1.0
+        _coverage[_u] = {'n28': _n, 'n27': _m, 'pct': round(_p, 3), 'partial': _p < 0.8}
+    print(f"[수록범위] 전수 {sum(1 for v in _coverage.values() if not v['partial'])}교 · 일부 {sum(1 for v in _coverage.values() if v['partial'])}교 (2027 대비 80% 미만)")
+
 payload = {
     'meta': {
         'title': '2027학년도 수시지원 대시보드',
@@ -1375,6 +1388,7 @@ payload = {
     'chungDoubt': _chung_doubt,   # 희소 사이드맵 — 추합이 산술 상한 초과(유불리 신호 제외용)
     'vScale': _vscale,   # 희소 사이드맵 — 그 전형의 환산 척도가 해마다 옮겨감(추이선으로 읽지 말 것)
     'c27': _c27,   # 희소 사이드맵 — 2027 수시 최종 경쟁률 [경쟁률, 지원자수]
+    'coverage': _coverage,   # 사이드맵(키=대학명) — 2028 전형계획 수록 범위 {n28, n27, pct, partial}
 }
 
 with open(os.path.join(OUT_DIR, 'data.js'), 'w', encoding='utf-8') as f:
