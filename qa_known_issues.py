@@ -233,6 +233,8 @@ if not os.path.exists(_ap):
 else:
     _A = dump("(function(){require('./apply_dates.js');return window.IPSI_APPLY})()")
     _ks = [k for k in _A if k != 'meta']
+    if not _ks:
+        print('  - 접수 일정 미정(apply_dates.js 비어 있음) — 요강 확정 후 fetch_apply_dates.py 재실행. 검사 건너뜀')
     _bad = []
     for k in _ks:
         v = _A.get(k) or {}
@@ -272,10 +274,10 @@ else:
     # 커버리지 방향 — data.js 에 있는 대학이 apply_dates 에서 빠지면 그 지원자는 안내를 못 본다
     _uni = dump("(function(){return window.IPSI.dicts.uni})()")
     _nomap = [u for u in _uni if u not in _A]
-    if _nomap:
+    if _ks and _nomap:
         print(f'  ✗ 접수일 누락 대학 {len(_nomap)}교: {_nomap[:6]}')
         fails.append(f'apply_dates 에 없는 대학 {len(_nomap)}교 — python3 fetch_apply_dates.py 재실행')
-    else:
+    elif _ks:
         print(f'  ✓ data.js 대학 {len(_uni)}교 전부 수록')
 
     # 신선도 — 접수가 다가오는데 수집본이 낡았으면 경고(실패는 아님)

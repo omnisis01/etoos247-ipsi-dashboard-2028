@@ -768,6 +768,8 @@ svg text{fill:var(--text-soft);font-family:var(--font)}
 .apply-bar.now .ab-d{color:#c2410c}
 [data-theme="dark"] .apply-bar.now .ab-d{color:#fdba74}
 .apply-bar.done{opacity:.85}
+/* 2028판: 접수 일정 미정 상태 — 점선 테두리로 '아직 정해지지 않음'을 표시 */
+.apply-bar.todo{opacity:.9;border-style:dashed}
 @media(max-width:620px){.apply-bar{font-size:12.5px;padding:9px 12px}}
 
 /* 모바일 터치 타깃 — 이전 44px 작업은 상단 버튼(.menu-toggle/.icon-btn/.ghost-btn)에만 걸려 있었다.

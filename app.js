@@ -2691,7 +2691,14 @@ $('#sourceNote').innerHTML = `자료: ${esc(D.meta.source)}<br>전형 ${D.meta.n
    접수 기간·마감 후로 문구가 자동으로 바뀌므로 시점이 지나도 어긋나지 않는다. */
 function applySchedule() {
   const box = $('#applyBar'); if (!box) return;
-  const S1 = new Date(2026, 8, 7), E1 = new Date(2026, 8, 11, 23, 59);   // 9/7 ~ 9/11
+  // 2028학년도 수시 접수 기간은 미정 — 요강(2027년 5월경) 확정 후 아래 SCHED 를 채우면 D-day·진행 중·마감 분기가 살아난다.
+  const SCHED = null;   // 예: { S1: new Date(2027, 8, 6), E1: new Date(2027, 8, 10, 23, 59), label: '2027.9.6(월)~9.10(금)' }
+  if (!SCHED) {
+    box.className = 'apply-bar todo';
+    box.innerHTML = `🗓️ <b>2028 수시 원서접수 일정은 미정</b> <span class="ab-sub">모집요강 발표(2027년 5월경) 후 반영합니다 · 지금 값은 전형계획 기준</span>`;
+    return;
+  }
+  const S1 = SCHED.S1, E1 = SCHED.E1;
   const now = new Date();
   const day = 24 * 60 * 60 * 1000;
   const dday = Math.ceil((S1 - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / day);

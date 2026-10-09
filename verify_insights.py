@@ -6,7 +6,7 @@
 import json, re, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, '..', '입결 및 인사이트', 'TongTongTong_2027학년도 수시지원의 모든 것_Final오타 수정 필요.xlsx')
+SRC = os.path.join(HERE, '..', '입결 및 인사이트', '2028학년도 수시지원의 모든 것_전형계획기준_v1.xlsx')   # 2028판: adapt_2028.py 산출
 INS = os.path.join(HERE, 'insights.js')
 
 # 자동 대조가 불가능해 의도적으로 건너뛰는 라벨(사유 명시).
@@ -117,7 +117,7 @@ def resolve(pool, lbl):
 
 def load_enroll26():
     """ver8.2 스냅샷 + build_data의 _E26_OVERRIDES(요강 확정 교정)를 겹쳐 2026 인원 행을 만든다."""
-    snap = json.load(open(os.path.join(HERE, 'enroll26.json'), encoding='utf-8'))['enroll26']
+    snap = json.load(open(os.path.join(HERE, 'enroll27.json'), encoding='utf-8'))['enroll27']   # 2028판: from 축 = 2027
     bt = open(os.path.join(HERE, 'build_data.py'), encoding='utf-8').read()
     blk = re.search(r'_E26_OVERRIDES = \{(.*?)\n\}', bt, re.S)
     ov = {}
