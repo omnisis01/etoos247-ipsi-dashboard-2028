@@ -39,6 +39,12 @@ def bare(t):                          # 괄호(미닫힘 포함)와 '전형' 접
     t = re.sub(r'\(.*?\)', '', key(t)); t = re.sub(r'\([^)]*$', '', t)
     return re.sub(r'전형$', '', t)
 def paren(t): return ''.join(re.findall(r'\((.*?)\)', key(t)))
+_nhap = lambda t: (lambda m: m and m.group(1) + '합' + m.group(2))(re.search(r'(\d)합(\d+)', nz(t)))
+# 파서(build_data.py _nz_name)와 같은 3키 정규화 — enroll27.json keys3 악수용
+def nz_name(t):
+    t = re.sub(r'\s', '', t or '')
+    t = t.replace('Ⅰ', 'I').replace('Ⅱ', 'II').replace('Ⅲ', 'III').replace('·', '').replace('ㆍ', '')
+    return re.sub(r'전형$', '', t)
 
 # ---------------------------------------------------------------- 대학명: 2028 약칭 → 2027 정식명
 # 실측 76교 — 1:1 58 · 태그 없는 이름=태그 없는 2027 이름 8 · 약칭 확장 9 · 강원대(강릉원주) 특례 1.
@@ -140,6 +146,9 @@ def main():
     snap = json.load(open(SNAP, encoding='utf-8'))
     R27, LOC27 = snap['rows'], snap['uniLoc']
     uni_set = set(LOC27)
+    SIGUN2REG = {}
+    for _u, _locs in LOC27.items():
+        for _l in _locs: SIGUN2REG.setdefault(_l['sigun'], _l['region'])
     # 2027 행 색인 — 정확 4키 · 3키 · 괄호 제거 3키(권역·세부전공 꼬리표 무시)
     by4, by3, byBB, deptsU = {}, collections.defaultdict(list), collections.defaultdict(list), collections.defaultdict(set)
     for k, v in R27.items():
@@ -176,7 +185,7 @@ def main():
         g28[(u, rd, bare(jn), '(외)' in jn)] += 1
         if rd is not None and rd != bare(dept28): g28d[(u, rd)] += 1   # 하이픈 환원으로 같은 2027 학과에 모이는 2028 학과 수
 
-    out, log = [], collections.Counter()
+    out, log, matched_k3 = [], collections.Counter(), set()
     unmatched_least = []
     for (u28, jn28, dept28, sub28), stages in groups.items():
         r = stages[0]
@@ -202,7 +211,12 @@ def main():
         elif split: tier = 'T9 하이픈 환원 N:1→분리'                   # 같은 인원을 중복 비교하지 않고 '분리'로 표기
         else:
             cand = byBB.get((uni, rd, bare(jhname), ext), [])
-            if len(cand) == 1: m27, tier = cand[0][1], ('T3b 하이픈 환원 1:1' if hyph else 'T3 괄호제거 1:1')
+            if len(cand) == 1 and g28[(uni, rd, bare(jhname), ext)] > 1:
+                # 2027 전형 하나를 2028 이 권역 등으로 여러 행으로 쪼갰다 — 각 행을 2027 총원과 비교하면
+                # 가짜 증감(▼5·▲1·▼3…)이 생기고 경쟁률이 N행에 복사된다(실측: 순천향대·원광대 의예과 6행씩,
+                # verify_data 블록 오염 래칫이 잡았다). 하이픈 학과(T9)와 같은 뜻이므로 '분리'로 쓴다.
+                tier = 'T10 전형 1:N 분할→분리'
+            elif len(cand) == 1: m27, tier = cand[0][1], ('T3b 하이픈 환원 1:1' if hyph else 'T3 괄호제거 1:1')
             elif len(cand) > 1 and g28[(uni, rd, bare(jhname), ext)] == 1:
                 # 2027 이 권역별로 쪼갠 것을 2028 이 한 행으로 모았다 — 인원은 합산, 이력은 최대 인원 행
                 best = max(cand, key=lambda c: c[1].get('enroll') or 0)[1]
@@ -213,6 +227,7 @@ def main():
                 else: tier = 'T6 N:N 짝 실패→공란'
             else: tier = 'T7 학과만 존재→공란(파서가 전형 변경 판정)'
         log[tier] += 1
+        if m27: matched_k3.add('|'.join((uni, nz_name(dept), nz_name(jhname))))
 
         # 전년대비 — 어댑터가 확정한다. 공란은 파서가 keys3(enroll27.json)로 '전형 변경'을 판정하고,
         # '신설'은 2027 에 그 학과 자체가 없을 때만, '분리'는 2027 한 학과가 2028 여러 학과로 갈린 때만 쓴다.
@@ -220,7 +235,7 @@ def main():
             d = enroll - int(m27['enroll'])
             prev = '-' if d == 0 else (f'▲{d}' if d > 0 else f'▼{-d}')
         elif tier.startswith('T8'): prev = '신설'
-        elif tier.startswith('T9'): prev = '분리'
+        elif tier.startswith(('T9', 'T10')): prev = '분리'
         else: prev = ''
 
         # 최저 — Y/N 과 산문 정규화, 2027 과 다르면 변경사항 합성(parse_choejeo_change 가 읽는 서식)
@@ -231,15 +246,21 @@ def main():
         change = ''
         if m27:
             l27 = s(m27.get('choejeo')) or '없음'
-            if nz(l27) != nz(least):
-                if l27 == '없음': change = '수능최저 신설'
-                elif least == '없음': change = '수능최저 폐지'
-                else: change = f'최저: {l27} → {least}'
+            # 2027 '국,수,영,탐(1) 2합6' 와 2028 정규화 '국,수,영,사,과 2합6' 는 같은 최저다. 문구로 비교하면
+            # 553행이 가짜 '변경'이 된다(2026-10-09 실측). N합M 이 다를 때만 변화로 본다. 하위 조건(수(기미) 지정·
+            # 탐구 과목 수)은 두 표기법 사이에서 신뢰성 있게 비교할 수 없어 가짜 신호 대신 침묵을 택한다.
+            h27, h28 = _nhap(l27), _nhap(least)
+            if l27 == '없음' and least != '없음': change = '수능최저 신설'
+            elif l27 != '없음' and least == '없음': change = '수능최저 폐지'
+            elif h27 and h28 and h27 != h28: change = f'최저: {l27} → {least}'
+            elif not h27 and not h28 and nz(l27) != nz(least): change = f'최저: {l27} → {least}'   # 각N 형 등
 
         # 소재지 — 2028 소재지 > 한국외대 특례 > 2027 매칭 행 > 2027 대학 최빈
-        region = s(r[3])
         sigun = s(r[14]) or _HUFS_SIGUN.get(u28) or (m27 and m27.get('sigun')) or LOC27[uni][0]['sigun']
-        if m27 and m27.get('region'): region = m27['region']
+        # 광역은 기초에서 역산한다 — 2028 지역(col3)은 대학 단위라 소재지가 분캠이면 '서울|용인' 같은 짝이 생긴다(실측 300행).
+        # 2027 그 대학의 (광역,기초) → 2027 전체의 기초→광역 → 2028 col3 순.
+        hit = next((x for x in LOC27[uni] if x['sigun'] == sigun), None)
+        region = hit['region'] if hit else SIGUN2REG.get(sigun) or s(r[3])
 
         h = m27 or {}
         c = h.get('c', [None] * 3); g = h.get('g', [None] * 3); v = h.get('v', [None] * 3)
@@ -267,6 +288,18 @@ def main():
     # 한국외대·한국외대(글로벌) → 한국외국어대학교(sigun 으로 구분) 같은 **의도된 병합**이다.
     merged = len({k[0] for k in groups}) - len({x[2] for x in out})
     if merged: log[f'대학명 병합(2028 {len({k[0] for k in groups})}→2027 {len({x[2] for x in out})}교)'] = merged
+
+    # enroll27.json — 파서가 읽는 작년 스냅샷. enroll27(5키)은 2027 인원, keys3 는 2027 3키에 **어댑터가 매칭한 2028 행의
+    # 3키를 더한 것**이다. 파서의 is_changed_track 은 3키가 keys3 에 없으면 '전형 변경'으로 덮는데, 2027 전형명엔
+    # '(경기도 의정부권)' 같은 꼬리표가 있어 어댑터가 괄호 제거로 맞춘 행도 전부 덮였다(실측 525행). 이 악수로 막는다.
+    e27 = {'|'.join([u, d, jt, jn, (v.get('jagyeok') or '')]): v['enroll'] for k, v in R27.items()
+           for u, d, jt, jn in [k.split('|')] if v.get('enroll') is not None}
+    k3 = {'|'.join((u, nz_name(d), nz_name(jn))) for k in R27 for u, d, jt, jn in [k.split('|')]} | matched_k3
+    json.dump({'meta': {'source': snap['meta']['source'], 'frozen': snap['meta']['frozen'],
+        'field': 'enroll27: 2027 data.js 모집인원(5키) / keys3: 2027 3키(_nz_name) ∪ adapt_2028 이 매칭한 2028 행의 3키 — '
+                 'build_data.py is_changed_track 과의 악수. verify_insights from 축도 읽는다'},
+        'enroll27': e27, 'keys3': sorted(k3)}, open(os.path.join(HERE, 'enroll27.json'), 'w', encoding='utf-8'), ensure_ascii=False)
+    print(f'  enroll27.json: 5키 {len(e27)} · keys3 {len(k3)} (2027 {len(k3) - len(matched_k3 - set())} + 매칭 2028 {len(matched_k3)})')
 
     wbo = openpyxl.Workbook(); ws = wbo.active; ws.title = '전체'
     ws.append(['2028학년도 수시 (전형계획 기준 — adapt_2028.py 가 2027 레이아웃으로 번역)'] + [''] * 34)

@@ -32,7 +32,10 @@ def main():
     t = open(os.path.join(HERE, 'data.js'), encoding='utf-8').read()
     d = json.loads(t[len('window.IPSI = '):-1])
     sch, rows, dic = d['schema'], d['rows'], d['dicts']
-    i = {k: sch.index(k) for k in ('uni', 'dept', 'jhtype', 'jhname', 'jagyeok', 'c26', 'chung26')}
+    # 2026 추합은 2026 경쟁률과 짝이다. 2028판에서 2026 경쟁률은 둘째 슬롯(c25 필드) — 연도로 찾는다
+    ratio = d['meta'].get('years', {}).get('ratio', [2026, 2025, 2024])
+    i = {k: sch.index(k) for k in ('uni', 'dept', 'jhtype', 'jhname', 'jagyeok', 'chung26')}
+    i['c26'] = sch.index(['c26', 'c25', 'c24'][ratio.index(2026)])
     snap, ov = load_e26()
 
     hits, applicable = [], 0

@@ -23,13 +23,13 @@
 - [x] 어댑터 자체 검증: 고유키 6,356 = 출력 행수 · 인원 합 = 원천 합(1단계만) · 최저 Y/N 수 보존 · 76교 전부 등장
 
 ### Phase 3 — 파이프라인 연도 전환
-- [ ] `enroll27.json` 생성(현 data.js 2027 모집인원, `enroll26.json`과 같은 키 계약)
-- [ ] `build_data.py`: SRC 경로 · meta 연도(cur 2028) · enroll27 참조 · `c27` 사이드맵 → `c` 첫 슬롯(c27/c26/c25) · 이력 연도 라벨
-- [ ] `data_corrections.json`: 2027 전용 교정은 새 파일에서 제외(근거: 원천이 다름). 2028 교정은 빈 채널로 시작
-- [ ] `app.js`: `SUNEUNG_2028`(2027-11-18 추정, 공고 확인) · 접수일 미정 처리 · 연도 라벨("2027 vs 2026"/"2026 vs 2025"/"2028 vs 2027") · `c` 디코드
-- [ ] `index.html` 제목·설명 · `verify_data.py` meta.years.cur=2028
-- [ ] 하네스 11종 통과 · 기준선 재생성(`row_baseline`·`dist_baseline`·`qa_comp`·`qa_chungwon`) · probe_fields 52필드 도달
-- [ ] 2027↔2028 공통 대학 샘플 교차 확인(모집인원 증감이 enroll27 대조와 일치하는지)
+- [x] `enroll27.json` 생성(현 data.js 2027 모집인원, `enroll26.json`과 같은 키 계약)
+- [x] `build_data.py`: SRC 경로 · meta 연도(cur 2028) · enroll27 참조 · `c27` 사이드맵 → `c` 첫 슬롯(c27/c26/c25) · 이력 연도 라벨
+- [x] `data_corrections.json`: 2027 전용 교정은 새 파일에서 제외(근거: 원천이 다름). 2028 교정은 빈 채널로 시작
+- [x] `app.js`: `SUNEUNG_2028`(2027-11-18 추정, 공고 확인) · 접수일 미정 처리 · 연도 라벨("2027 vs 2026"/"2026 vs 2025"/"2028 vs 2027") · `c` 디코드
+- [x] `index.html` 제목·설명 · `verify_data.py` meta.years.cur=2028
+- [x] 하네스 11종 통과 · 기준선 재생성(`row_baseline`·`dist_baseline`·`qa_comp`·`qa_chungwon`) · probe_fields 52필드 도달
+- [x] 2027↔2028 공통 대학 샘플 교차 확인(모집인원 증감이 enroll27 대조와 일치하는지)
 
 ### Phase 4 — 내용
 - [ ] `insights.js`: 2027 산문 제거 → 2028 vs 2027 모집인원·최저 변화 자동 생성(`build_ins.py`) · verify_insights 통과

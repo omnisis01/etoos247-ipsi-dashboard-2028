@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 첫 페인트 전에 테마 확정(다크 디폴트) — FOUC 방지 -->
 <script>(function(){try{var t=JSON.parse(localStorage.getItem('ipsi_theme'));if(t!=='light'&&t!=='dark')t='light';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
-<title>이투스247학원 | 2027 수시지원 대시보드</title>
-<meta name="description" content="이투스247학원 — 2027학년도 수시지원 대시보드. 2026 vs 2025 입결·경쟁률 비교와 올해 입시 유불리 예상.">
+<title>이투스247학원 | 2028 수시지원 대시보드</title>
+<meta name="description" content="이투스247학원 — 2028학년도 수시지원 대시보드(전형계획 기준). 입결 2026 vs 2025·경쟁률 2027 vs 2026 비교와 올해 입시 유불리 예상.">
 
 <!-- ▼▼ Google Analytics (GA4): 아래 GA_MEASUREMENT_ID 한 곳만 본인 측정 ID(G-XXXXXXXXXX)로 교체 ▼▼ -->
 <script>
@@ -67,9 +67,9 @@
   <!-- Sidebar -->
   <aside id="sidebar" aria-label="계열 카테고리 및 필터">
     <div class="brand">
-      <h1 class="sr-only">이투스247학원 2027 수시지원 대시보드</h1>
+      <h1 class="sr-only">이투스247학원 2028 수시지원 대시보드</h1>
       <button id="homeBtn" class="brand-logo" aria-label="처음 화면으로 (검색·필터 모두 해제)" title="처음 화면으로 돌아가기"></button>
-      <p class="brand-sub">2027 수시지원 대시보드<span>2026 vs 2025 비교 · 올해 유불리 예상</span></p>
+      <p class="brand-sub">2028 수시지원 대시보드<span>전형계획 기준 · 입결 2026 vs 2025 · 경쟁률 2027 vs 2026</span></p>
     </div>
 
     <nav class="side-section" aria-label="계열 카테고리">
@@ -129,7 +129,7 @@
           <h2>🎯 올해 입시 유불리 예상 <span class="muted" id="hlSub"></span></h2>
           <div class="seg" id="hlFilter"></div>
         </div>
-        <p class="hero-desc" id="heroDesc">2026 vs 2025 입결·경쟁률 추이와 2027 모집인원·수능최저 변화를 종합한 <b>자동 추정</b>입니다. <b>메디컬·상위권 본교(SKY·서성한·중경외시·건동홍)</b>만 선별합니다. 카드를 누르면 근거를 볼 수 있어요.</p>
+        <p class="hero-desc" id="heroDesc">입결·추합 2026 vs 2025, 경쟁률 2027 vs 2026 추이와 2028 모집인원·수능최저 변화를 종합한 <b>자동 추정</b>입니다. <b>메디컬·상위권 본교(SKY·서성한·중경외시·건동홍)</b>만 선별합니다. 카드를 누르면 근거를 볼 수 있어요.</p>
         <details class="verdict-legend" open>
           <summary>🧭 유불리 판정 기준 (범례)</summary>
           <div class="vl-grid">
@@ -137,7 +137,7 @@
             <div class="vl-item bad"><b>🔴 불리 신호</b><span>모집 감원 · 수능최저 완화/폐지 · 입결 상승세 · 경쟁률 상승 · 추합 감소</span></div>
             <div class="vl-item warn"><b>🟠 신설·변동</b><span>신설 / 분리·통합 → 첫해 입결 미형성, 변동성 큼(기회 가능)</span></div>
           </div>
-          <p class="vl-note">입결·경쟁률·추합 추이는 <b>2026 vs 2025</b> 실적, 모집인원·수능최저 변화는 <b>2027 vs 2026</b> 기준입니다. <b>논술전형은 경쟁률 변화를 점수에 반영하지 않습니다</b> — 2026 실측에서 논술은 경쟁률이 오르내려도 합격선이 따라 움직이지 않았습니다(교과·종합은 반영). 여러 신호를 합산해 유리·불리·중립으로 추정하며, 실제 입시 결과와 다를 수 있어 참고용입니다. (※ 입결은 등급 숫자가 작을수록 ‘높음/우수’)</p>
+          <p class="vl-note">입결·추합 추이는 <b>2026 vs 2025</b>, 경쟁률은 <b>2027 vs 2026</b> 실적, 모집인원·수능최저 변화는 <b>2028 vs 2027</b>(전형계획) 기준입니다. 2027 입결은 공개(2027년 4~5월) 후 반영합니다. <b>논술전형은 경쟁률 변화를 점수에 반영하지 않습니다</b> — 2026 실측에서 논술은 경쟁률이 오르내려도 합격선이 따라 움직이지 않았습니다(교과·종합은 반영). 여러 신호를 합산해 유리·불리·중립으로 추정하며, 실제 입시 결과와 다를 수 있어 참고용입니다. (※ 입결은 등급 숫자가 작을수록 ‘높음/우수’)</p>
         </details>
         <div id="highlightCards" class="hl-cards"></div>
       </section>
@@ -151,7 +151,7 @@
         </div>
         <div class="chart-grid">
           <div class="chart-box"><div class="chart-title" id="chartTitleA"></div><div id="chartA"></div></div>
-          <div class="chart-box"><div class="chart-title trend-head">전체 추이 (2024→2026)<span class="seg seg-sm" id="trendMetric"></span></div><div id="chartB"></div></div>
+          <div class="chart-box"><div class="chart-title trend-head">전체 추이 (입결 2024→2026 · 경쟁률 2025→2027)<span class="seg seg-sm" id="trendMetric"></span></div><div id="chartB"></div></div>
         </div>
       </section>
 
@@ -212,11 +212,11 @@
 
 <div id="printArea" aria-hidden="true"></div>
 
-<script src="data.js?v=1d4ddf23"></script>
+<script src="data.js?v=6dfd6e41"></script>
 <script src="insights.js?v=cf8b2a0c"></script>
 <script src="apply_dates.js?v=706e7f6e"></script>
 <script src="admissions-links.js?v=f14e04ac"></script>
 <script src="record_scope.js?v=16924877"></script>
-<script src="app.js?v=c12f64af"></script>
+<script src="app.js?v=ad8af2b2"></script>
 </body>
 </html>

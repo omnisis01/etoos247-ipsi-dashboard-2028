@@ -105,9 +105,9 @@ def verify(d):
     if d['meta'].get('nUni') != len(d['dicts']['uni']):
         fails.append(f"meta.nUni != 실제 대학수({len(d['dicts']['uni'])})")
 
-    # 2) 연도 프레임(확정): 올해=2027
-    if d['meta'].get('years', {}).get('cur') != 2027:
-        fails.append(f"meta.years.cur != 2027 (현재 {d['meta'].get('years',{}).get('cur')})")
+    # 2) 연도 프레임(확정): 올해=2028 (2026-10-09 전환)
+    if d['meta'].get('years', {}).get('cur') != 2028:
+        fails.append(f"meta.years.cur != 2028 (현재 {d['meta'].get('years',{}).get('cur')})")
 
     # 3) 입결 등급 불변식 — 1.0~9.0 범위 밖이면 무데이터(None)여야 한다.
     #    (등급 숫자가 작을수록 '높음/우수'. 환산점수 오입력이 등급칸에 새는 것을 차단.)
@@ -196,7 +196,9 @@ def verify(d):
     iu = col(sch, 'uni'); ic = col(sch, 'cats')
     matched = {(d['dicts']['uni'][r[iu]], d['dicts']['dept'][r[idp]])
                for r in rows if 'semiconductor_contract' in r[ic]}
-    missing = [(u, dp) for u, dp in SEMI_CONTRACT_MASTER if (u, dp) not in matched]
+    # 2028판은 76교 — 화이트리스트의 대학이 데이터에 없으면(KAIST·UNIST 등) 매칭 대상이 아니다
+    _unis = set(d['dicts']['uni'])
+    missing = [(u, dp) for u, dp in SEMI_CONTRACT_MASTER if u in _unis and (u, dp) not in matched]
     if missing:
         fails.append(f"정원 외 채용조건형 매칭 누락 {len(missing)}건: {missing} — SEMI_CONTRACT_WHITELIST 확인")
 

@@ -27,7 +27,7 @@ def main():
     sch, rows = d['schema'], d['rows']
     i = {k: sch.index(k) for k in ('uni', 'dept', 'jhtype', 'jhname', 'jagyeok', 'enroll', 'c26')}
     dic = d['dicts']
-    snap = json.load(open(os.path.join(HERE, 'enroll26.json'), encoding='utf-8'))['enroll26']
+    snap = json.load(open(os.path.join(HERE, 'enroll27.json'), encoding='utf-8'))['enroll27']   # 2028판: c 슬롯0=2027 경쟁률 ↔ 2027 인원
     # build_data.py가 2026 요강으로 확정한 인원 교정(_E26_OVERRIDES)을 여기서도 반영한다.
     # 원본 enroll26.json은 사용자 제공 스냅샷이라 손대지 않고, 교정만 겹쳐 읽는다.
     # 공유하지 않으면 이미 규명·교정한 행이 계속 '의심'으로 남아 래칫이 무뎌진다.

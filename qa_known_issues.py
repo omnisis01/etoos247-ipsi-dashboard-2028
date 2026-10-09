@@ -9,8 +9,7 @@
 import datetime, json, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-XLSX = os.path.join(HERE, '..', '입결 및 인사이트',
-                    'TongTongTong_2027학년도 수시지원의 모든 것_Final오타 수정 필요.xlsx')
+XLSX = os.path.join(HERE, '..', '입결 및 인사이트', '2028학년도 수시지원의 모든 것_전형계획기준_v1.xlsx')
 
 def dump(expr):
     out = subprocess.run(['node', '-e',
@@ -111,7 +110,10 @@ ALIASES = ['진주교대', '서울교대', '경인교대', '서울여대', '숙�
            '에리카', '와이즈', '유니스트', '지스트', '디지스트', '켄텍']
 miss = []
 _exp = expand_many([a.lower() for a in ALIASES])
+_unis = ' '.join(dc['uni']).lower()
 for q, e in zip(ALIASES, _exp):
+    if e not in _unis:                      # 2028판은 76교 — 교대·과기원처럼 데이터에 없는 대학은 회귀 대상이 아니다
+        print(f'  · "{q}" 해당 대학이 데이터에 없음 → 건너뜀'); continue
     n = count(q, [e])
     print(f'  {"✓" if n else "✗"} "{q}" → {n}건  (확장: {e})')
     if not n:

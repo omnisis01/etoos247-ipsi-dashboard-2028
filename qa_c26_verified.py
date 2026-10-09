@@ -29,7 +29,10 @@ def main():
     t = open(os.path.join(HERE, 'data.js'), encoding='utf-8').read()
     d = json.loads(t[len('window.IPSI = '):-1])
     sch, dic = d['schema'], d['dicts']
-    i = {k: sch.index(k) for k in ('uni', 'dept', 'jhtype', 'jhname', 'jagyeok', 'c26')}
+    # 2028판에서 2026 경쟁률은 둘째 슬롯(c25 필드)에 있다 — 필드명이 아니라 meta.years.ratio 로 찾는다
+    ratio = d['meta'].get('years', {}).get('ratio', [2026, 2025, 2024])
+    i = {k: sch.index(k) for k in ('uni', 'dept', 'jhtype', 'jhname', 'jagyeok')}
+    i['c26'] = sch.index(['c26', 'c25', 'c24'][ratio.index(2026)])
     cur = {}
     for r in d['rows']:
         if r[i['c26']] is None:

@@ -1,5 +1,5 @@
 /* ============================================================
-   2027 수시지원 대시보드 — app logic (vanilla JS, no deps)
+   2028 수시지원 대시보드 — app logic (vanilla JS, no deps) · 2027판에서 분기(2026-10-09)
    ============================================================ */
 (function () {
 'use strict';
@@ -189,7 +189,8 @@ function parseLeast(t) {
    ⚠️ 수능최저는 방패가 아니다. 납치는 '수능을 잘 봤다'는 전제라 최저는 어차피 충족된다.
    ⚠️ 원문 일자의 요일이 2026년 달력과 어긋나는 행(112행·13교)은 작년 일정이 남은 것으로 보여
       전/후 판정에서 제외한다 — 틀린 판정은 없느니만 못하다. */
-const SUNEUNG_2027 = new Date(2026, 10, 19);
+// 2028학년도 수능은 2027-11-18(목)로 추정(11월 셋째 목요일). 교육부 공고가 나오면 확정할 것.
+const SUNEUNG_2028 = new Date(2027, 10, 18);
 const _DOW = ['일', '월', '화', '수', '목', '금', '토'];
 ROWS.forEach(r => {
   r.examWhen = null;                    // 'pre' | 'post' | null(판정 불가)
@@ -244,7 +245,7 @@ ROWS.forEach(r => {
     const d = new Date(2026, +m[1] - 1, +m[2]);
     const dow = (m[3] || '').trim();
     if (dow && (!_DOW.includes(dow) || _DOW[d.getDay()] !== dow)) trustworthy = false;
-    if (d < SUNEUNG_2027) pre = true; else post = true;
+    if (d < SUNEUNG_2028) pre = true; else post = true;
   });
   if (!trustworthy) return;             // 작년 일정 잔존 의심 → 판정 보류
   r.examWhen = pre && !post ? 'pre' : (!pre && post ? 'post' : null);
@@ -1231,7 +1232,7 @@ function renderKPIs() {
     { cls: 'bad', label: '🔓 최저 완화·폐지', val: nEase.toLocaleString(), sub: '지원 증가→경쟁↑' },
     { cls: '', label: '🎯 평균 입결(2026)', val: avgG == null ? '–' : avgG.toFixed(2),
       sub: dom.std ? `${CUT_LABELS[dom.std]} 기준 ${fmtInt(dom.kept)}건` + (dom.dropped ? ` · 다른 기준 ${fmtInt(dom.dropped)}건 제외` : '') : '등급, 낮을수록 우수' },
-    { cls: '', label: '🔥 평균 경쟁률(2026)', val: avgC == null ? '–' : avgC.toFixed(1) + ':1', sub: '지원자/모집' },
+    { cls: '', label: '🔥 평균 경쟁률(2027)', val: avgC == null ? '–' : avgC.toFixed(1) + ':1', sub: '지원자/모집' },
   ];
   $('#kpis').innerHTML = cards.map(c =>
     `<div class="kpi ${c.cls}"><div class="k-bar"></div><div class="k-label">${c.label}</div><div class="k-val">${c.val}</div><div class="k-sub">${c.sub}</div></div>`
@@ -1279,7 +1280,7 @@ function renderHighlights() {
   const hd = $('#heroDesc');
   if (hd) hd.innerHTML = nong
     ? '<b>농어촌학생전형</b>만 모아 봅니다 — 큐레이션 없이 <b>전 대학</b> 대상으로, 2026 vs 2025 입결·경쟁률 추이와 2027 모집인원·수능최저 변화를 종합한 <b>자동 분석 결과</b>입니다. 카드를 누르면 상세 내용을 볼 수 있어요.'
-    : '2026 vs 2025 입결·경쟁률 추이와 2027 모집인원·수능최저 변화를 종합한 <b>자동 분석 결과</b>입니다. <b>메디컬·상위권 본교(SKY·서성한·중경외시·건동홍)</b>까지만 선별합니다. 카드를 누르면 상세 내용을 볼 수 있어요.';
+    : '입결·추합 2026 vs 2025, 경쟁률 2027 vs 2026 추이와 2028 모집인원·수능최저 변화를 종합한 <b>자동 분석 결과</b>입니다. <b>메디컬·상위권 본교(SKY·서성한·중경외시·건동홍)</b>까지만 선별합니다. 카드를 누르면 상세 내용을 볼 수 있어요.';
   let pool = FILTERED.filter(r => {
     const v = V(r);
     if (!v.sig.length) return false;
@@ -1418,7 +1419,9 @@ function renderCharts() {
 }
 function renderTrendChart() {
   const f = FILTERED;
-  const yearsLab = ['2024', '2025', '2026'];
+  // 지표별 최신 가용 연도 — 입결 2024→2026, 경쟁률 2025→2027. 함께 그릴 땐 두 해를 병기한다.
+  const yearsLab = S.trendMetric === 'comp' ? ['2025', '2026', '2027']
+    : S.trendMetric === 'grade' ? ['2024', '2025', '2026'] : ['2024/25', '2025/26', '2026/27'];
   // 지표 토글 — 입결과 경쟁률은 축 방향이 반대(입결은 낮을수록 위)라 겹쳐 그리면 읽기 어렵다.
   // 하나만 고르면 그 지표가 세로 공간을 다 쓰고 눈금선·축 라벨까지 붙는다.
   const tseg = $('#trendMetric');
@@ -1497,7 +1500,7 @@ const COLS = [
   { k: 'enroll', label: '모집(전년대비)', short: '모집', sort: 'enroll' },
   { k: 'least', label: '수능최저', short: '최저', sort: null },
   { k: 'grade', label: '입결 2026 (전년비)', short: '입결', sort: 'grade' },
-  { k: 'comp', label: '경쟁률 2026 (전년비)', short: '경쟁률', sort: 'comp' },
+  { k: 'comp', label: '경쟁률 2027 (전년비)', short: '경쟁률', sort: 'comp' },
   { k: 'impact', label: '올해 유불리', short: '유불리', sort: 'impact' },
   { k: 'add', label: '담기', short: '담기', sort: null },
 ];
@@ -1760,7 +1763,7 @@ function openModal(i, options = null) {
         ${(() => { const ap = applyInfo(r.uni); if (!ap) return ''; const un = ap.unstated ? ` <span class="warn-tag" title="이 대학은 요강에 접수 ${ap.toUnstated ? '마감' : '시작'} 시각을 적지 않았습니다. 표시된 시각은 접수처 시스템 값이라 실제와 다를 수 있으니 반드시 입학처 공지를 확인하세요.">시각 미공표</span>` : ''; return `<dt>원서접수</dt><dd><b>${ap.txt}</b>${ap.early ? ' <span class="delta tighten" title="공통 마감(9/11)보다 일찍 닫습니다">조기마감</span>' : ''}${un} <span class="muted">· ${esc(ap.via)}</span></dd>`; })()}
         ${r.date ? `<dt>대학별고사</dt><dd>${esc(r.date)}${r.examKind && r.examKind !== '논술' ? ` ${r.examKind}` : ''}</dd>` : ''}
       </div></div>
-      <div class="msec hero-sec"><h4>🎯 올해 입시 유불리 예상 <span class="muted">2026 vs 2025 + 2027 변화 종합 · AI 분석</span></h4>
+      <div class="msec hero-sec"><h4>🎯 올해 입시 유불리 예상 <span class="muted">입결 2026 vs 2025 · 경쟁률 2027 vs 2026 + 2028 변화 종합 · AI 분석</span></h4>
         <div class="verdict-head"><span class="verdict-big ${v.cls}">${v.label}</span>
           <span class="muted">${v.cls === 'good' ? '합격선이 낮아질 신호가 우세합니다.' : v.cls === 'bad' ? '합격선이 높아질 신호가 우세합니다.' : v.cls === 'new' ? '신설로 입결이 미형성되어 변동성이 큽니다.' : '뚜렷한 방향성이 약합니다.'}</span></div>
         <div class="detail-table-scroll" role="region" aria-label="전년 대비 지표 비교표" tabindex="0"><table class="trend-table yoy-table"><thead><tr><th>지표</th><th>2025</th><th>2026</th><th>전년비</th><th>해석</th></tr></thead><tbody>

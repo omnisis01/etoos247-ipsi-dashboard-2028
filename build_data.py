@@ -3,7 +3,10 @@
 import openpyxl, re, json, os, html, statistics
 
 # 원천 폴더가 '입결' → '입결 및 인사이트'로 개명됨(원천 xlsx 이동). 개명 시 이 경로도 갱신.
-SRC = os.path.join(os.path.dirname(__file__), '..', '입결 및 인사이트', 'TongTongTong_2027학년도 수시지원의 모든 것_Final오타 수정 필요.xlsx')
+# 2028학년도 판 — 원천은 adapt_2028.py 가 2027 레이아웃으로 번역한 중간 엑셀(전형계획 기준, 76교).
+# 요강판이 나오면 어댑터를 다시 돌리고 이 파일명만 바꾼다. YEAR 는 2027 전용 교정·c27 사이드맵을 끈다.
+YEAR = 2028
+SRC = os.path.join(os.path.dirname(__file__), '..', '입결 및 인사이트', '2028학년도 수시지원의 모든 것_전형계획기준_v1.xlsx')
 OUT_DIR = os.path.dirname(__file__)
 
 # ---------------------------------------------------------------- load
@@ -601,8 +604,8 @@ def intern(key, val):
 rows = []
 _raw_cells = {}   # {행인덱스: {키: 원문}} — 파서가 버린 셀의 원문. SCHEMA 밖 사이드맵.
 _chung_doubt = {}   # 행인덱스 → 1 (추합이 산술 상한을 넘음)
-_E26_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'enroll26.json')
-_ENROLL26 = json.load(open(_E26_PATH, encoding='utf-8'))['enroll26'] if os.path.exists(_E26_PATH) else {}
+_E26_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'enroll27.json')   # 2028판: 작년=2027 스냅샷
+_ENROLL26 = json.load(open(_E26_PATH, encoding='utf-8'))['enroll27'] if os.path.exists(_E26_PATH) else {}
 # 알려진 원천(마스터 xlsx) 수능최저 오기 교정 — 외부 소스(2027 요강·토마스·입시위키)로 확인된 것만.
 # 마스터 파일을 직접 수정하지 않고 빌드 시 패치한다. (uni, dept, [jhname], old 원문) → new 원문.
 # ⚠️ 원천 엑셀의 열 밀림 — 최저 칸에 전형방법 값이, 전형방법 칸에 다른 값이 들어간 행.
@@ -614,6 +617,7 @@ _SHIFTED = {
     ('삼육대학교', '아트앤디자인학과', '농어촌전형(외)'): ('교과20+실기80', '교과100'),
     ('삼육대학교', '체육학과', '농어촌전형(외)'): ('교과40+실기60', '교과100'),
 }
+if YEAR != 2027: _SHIFTED = {}          # 삼육대 열 밀림은 2027 원천의 사고 — 2028 원천에는 없다
 _shift_fixed = set()
 
 def apply_shift(uni, dept, jhname, choejeo, method):
@@ -656,8 +660,8 @@ def apply_least_correction(uni, dept, jhname, choejeo):
 #  · 마크가 순수 기호(▲N/▼N/-/공란)인 행만 — '신설'·'폐지'·'분리'·'통합'·텍스트는 원본 유지
 #    ('신설'인데 2026 존재 13건은 학과 개명 의심 → (B) 전형 변경 과제에서 별도 처리)
 #  · 재계산 값이 기존 마크와 같으면 원본 문자열 그대로(불필요한 diff 방지)
-_SNAP26 = json.load(open(os.path.join(os.path.dirname(__file__), 'enroll26.json'), encoding='utf-8'))
-_E26 = _SNAP26['enroll26']
+_SNAP26 = json.load(open(os.path.join(os.path.dirname(__file__), 'enroll27.json'), encoding='utf-8'))   # 2028판: 작년=2027
+_E26 = _SNAP26['enroll27']
 _KEYS3_26 = set(_SNAP26['keys3'])
 _PURE_MARK = re.compile(r'^(-?|[▲▼△▽↑↓]\s*\d+)$')
 
@@ -1344,7 +1348,7 @@ print(f"[환산척도] 연도별 척도가 옮겨간 전형 {len(_shift)}개 · 
 # 엑셀이 바뀌어 키가 어긋나면 그 행은 조용히 빈칸이 된다(오답보다 빈칸) — 채움 수를 로그로 본다.
 _c27 = {}
 _r27p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tools', 'ratio_compare', 'ratio27.json')
-if os.path.exists(_r27p):
+if YEAR == 2027 and os.path.exists(_r27p):   # 2028판은 2027 경쟁률이 c 첫 슬롯에 직접 실린다 — 사이드맵 불필요
     _r27 = json.load(open(_r27p, encoding='utf-8'))
     _IT, _ID, _IE = SCHEMA.index('jhtype'), SCHEMA.index('dept'), SCHEMA.index('enroll')
     for _i, _r in enumerate(rows):
@@ -1358,8 +1362,9 @@ payload = {
     'meta': {
         'title': '2027학년도 수시지원 대시보드',
         'subtitle': '2026 대비 변화 · 입결 영향 · 3개년 추이',
-        'source': '2027학년도 수시지원의 모든 것 Final (제작: 훈장 김민철)',
-        'years': {'cur': 2027, 'result': [2026, 2025, 2024]},
+        'source': '2028학년도 수시 전형계획 기준 (2028_수시정시_35개대_의치약한수_260608 · adapt_2028.py 번역)',
+        # 지표별 최신 가용 연도 — ratio(경쟁률) 2027/2026/2025 · result(입결·추합·기준) 2026/2025/2024
+        'years': {'cur': YEAR, 'ratio': [2027, 2026, 2025], 'result': [2026, 2025, 2024]},
         'nRows': len(rows), 'nUni': len(order['uni']),
     },
     'schema': SCHEMA,

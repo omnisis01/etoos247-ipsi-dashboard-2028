@@ -50,20 +50,35 @@ const D = globalThis.window.IPSI;
 function rowFor(field) {
   const di = D.schema.indexOf(field);
   if (di < 0) return '0';
-  const dict = D.dicts[field] || (field.startsWith('std') ? D.dicts.std : null);
+  // std26/std25/std24 만 dicts.std 를 공유한다. stdK26(버킷 코드)·prev(마크)는 사전형이 아니다.
+  const dict = D.dicts[field] || (/^std2\d$/.test(field) ? D.dicts.std : null);
+  // std24 는 세 해의 기준이 **서로 달라야** 화면(⚠ 연도별 기준 상이)에 나온다 — 그 조건을 만족하는 행으로 연다.
+  // 실측(2026-10-09, 2028판): 첫 행이 3년 동일이라 경고가 안 떠 미도달로 오판했다(상이 행은 505개 있었다).
+  if (field === 'std24') {
+    const i26 = D.schema.indexOf('std26'), i25 = D.schema.indexOf('std25');
+    const nz = t => String(t || '').replace(/\s/g, '');
+    for (let i = 0; i < D.rows.length; i++) {
+      const a = [D.rows[i][i26], D.rows[i][i25], D.rows[i][di]].map(v => nz(D.dicts.std[v])).filter(Boolean);
+      if (new Set(a).size > 1) return String(i);
+    }
+  }
   for (let i = 0; i < D.rows.length; i++) {
     const v = D.rows[i][di];
     if (v == null || v === '') continue;
     if (dict && !String(dict[v] || '').trim()) continue;   // 사전형은 실제 문자열이 있어야 한다
     return String(i);
   }
-  return '0';
+  return null;   // 이 데이터엔 값이 한 행도 없다 — 화면 도달을 검사할 수 없다
 }
 
 const rows = [];
+const skipped = [];
 for (const f of FIELDS) {
   let out;
   const probeRow = f.startsWith('ins.') ? '0' : rowFor(f);
+  if (probeRow === null) {       // 2028판: 고사일(미정)·복수지원(원천 없음)처럼 수집된 값이 0행이면 검사 대상이 아니다
+    skipped.push(f); console.log(`${f.padEnd(14)} · 값 없음(0행) → 건너뜀`); continue;
+  }
   try {
     out = JSON.parse(execFileSync('node', ['-e', DRIVER], {
       cwd: HERE, env: { ...process.env, PROBE: f, PROBE_ROW: probeRow }, encoding: 'utf8',
@@ -90,6 +105,10 @@ const CODE_FIELDS = {
   //    대신 그 경고 문구가 화면에 있는지로 확인한다.
   // ⚠️ 문구를 바꾸면 여기도 함께 바꾼다 — 실제로 2026-09-08 워딩 개선 때 이 검사가 잡아냈다.
   std24: ['발표 기준이 해마다 달라'],
+  // prev(전년대비 마크)는 모달에서 dkind·dn 으로 변환된 d.txt 로 그려지고, 원문은 지원카드(인쇄)·비교함에서만
+  // — 둘 다 담긴 행이 있어야 렌더된다(빈 세션의 프로브에선 비어 있다). 2027 에선 첫 행의 미지 마크('신살')가
+  // 원문 그대로 흘러나와 우연히 통과했을 뿐이다(2026-10-09, 2028판 실측). 변환 라벨로 도달을 본다.
+  prev: ['▲', '▼', '신설', '분리'],
 };
 
 const missing = rows.filter(r => r.boot && !r.hit && !(r.f in CODE_FIELDS));
@@ -106,7 +125,8 @@ const fire = k => { const f = H.HANDLERS.get(k); if (f) { try { f(ev()); } catch
 ['insightBtn:click','compareBtn:click','favBtn:click','advisorBtn:click'].forEach(fire);
 for (const el of H.PROBES.slice()) for (const h of [el._onclick, el._onkeydown]) if (typeof h === 'function') { try { h(ev()); } catch (e) {} }
 process.stdout.write(H.RENDERED.map(r => r.html).join('\\n').replace(/<[^>]*>/g, ' '));
-`], { cwd: HERE, env: { ...process.env, PROBE: '' }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+`], { cwd: HERE, env: { ...process.env, PROBE: '', PROBE_ROW: rowFor('std24') || '0' }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  // ↑ std24 의 라벨(연도별 기준 상이)은 기준이 서로 다른 행의 모달에서만 나온다 — 그 행으로 연다
   console.log();
   console.log('=== 코드값 필드 — 변환 라벨로 화면에 나오는지 ===');
   for (const r of codeRows) {
@@ -119,7 +139,7 @@ process.stdout.write(H.RENDERED.map(r => r.html).join('\\n').replace(/<[^>]*>/g,
 
 console.log();
 const reached = rows.filter(r => r.hit).length + codeRows.filter(r => !missing.includes(r)).length;
-console.log(`값 그대로 도달 ${rows.filter(r => r.hit).length} · 코드값(라벨 변환) ${codeRows.length} · 미도달 ${missing.length} · 부팅실패 ${rows.filter(r => !r.boot).length}`);
+console.log(`값 그대로 도달 ${rows.filter(r => r.hit).length} · 코드값(라벨 변환) ${codeRows.length} · 미도달 ${missing.length} · 부팅실패 ${rows.filter(r => !r.boot).length} · 값 없음 건너뜀 ${skipped.length}${skipped.length ? ' (' + skipped.join(', ') + ')' : ''}`);
 if (missing.length) {
   console.log('미도달 필드 — 수집했으나 사용자 화면에 나오지 않는다:');
   for (const m of missing) console.log('  ✗', m.f);
