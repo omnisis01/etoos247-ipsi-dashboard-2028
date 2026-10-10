@@ -55,7 +55,9 @@ def build_uni(u, rows, snap_rows, tier):
     u27 = collections.defaultdict(lambda: [0, 0])
     for k, v in snap_rows.items():
         p = k.split('|')
-        if p[0] == u and v.get('enroll') is not None: u27[nzv(p[3])][0] += 1; u27[nzv(p[3])][1] += v['enroll']
+        if p[0] != u: continue
+        p[1], p[3] = ren27(u, p[1], p[3])                   # 2027 이름을 2028 이름으로(rename28) — 어댑터와 같은 사전
+        if v.get('enroll') is not None: u27[nzv(p[3])][0] += 1; u27[nzv(p[3])][1] += v['enroll']
     rows27 = sum(c for c, _ in u27.values()); cover = len(R) / rows27 if rows27 else 1.0
     partial = cover < 0.8
     d_tot = tot28 - tot27
@@ -76,7 +78,9 @@ def build_uni(u, rows, snap_rows, tier):
         # 검증기 resolve() 는 라벨이 계열 키워드(의예·약학·한의예…)로 시작하면 그 계열로 범위를 좁힌다 —
         # '의예약학전형'이 '의예'+'약학전형'으로 쪼개져 23≠29 가 났다. 그런 전형명은 '(교과) ' 접두로 쓴다.
         lbl = f'({JHT_SHORT.get(jt, jt)}) {jn}' if any(jn.startswith(k) for k in GYE_KEYS) else f'{jn}({JHT_SHORT.get(jt, jt)})'
-        if n27 and len(cmp_) == len(xs) == n27:            # 전수 수록 전형 — 2027 전형 총원과 비교 가능
+        # 2027 그 전형의 단위가 **전부** 2028 에 1:1 로 있으면(cmp_ == n27) 신설·전형변경 행이 섞여도 전형 총원 비교는 참이다
+        # (2028 총원엔 신설분이 들어가야 맞다). 2027 단위가 하나라도 빠지면(개명 미등록·누락) from 을 비운다.
+        if n27 and len(cmp_) == n27:                        # 전수 수록 전형 — 2027 전형 총원과 비교 가능
             a = e27; d = b - a
             prow.append({'label': lbl, 'from': fmt(a), 'to': fmt(b), 'dir': 'up' if d > 0 else 'down' if d < 0 else 'same', 'note': mark(d)})
         else:
@@ -120,12 +124,15 @@ def build_uni(u, rows, snap_rows, tier):
         sd = sorted({x['dept'] for x in split})
         if sd: bl.append('2027 통합 단위에서 분리: ' + ', '.join(sd[:10]) + (f' 외 {len(sd) - 10}' if len(sd) > 10 else ''))
     bare = lambda t: re.sub(r'전형$', '', re.sub(r'\(.*?\)', '', re.sub(r'\s', '', t or '')))
-    j27 = {bare(k.split('|')[3]) for k in snap_rows if k.split('|')[0] == u}; j28 = {bare(x['jhn']) for x in R}
+    j27 = {bare(ren27(u, '', k.split('|')[3])[1]) for k in snap_rows if k.split('|')[0] == u}; j28 = {bare(x['jhn']) for x in R}
     gone = sorted(j27 - j28)
     if gone:
         if not (new or split): bl = []
         bl.append('2027 전형 중 2028 전형계획에 같은 이름이 없는 것(개편·개명·폐지 가능, 요강에서 확인): ' + ', '.join(gone[:8]) + (f' 외 {len(gone) - 8}' if len(gone) > 8 else ''))
-    if new or split or gone:
+    rn = REN.get(u, {})
+    if rn.get('jhname'): bl.append('전형명 변경(2027→2028, 시행계획 기준): ' + ', '.join(f'{o} → {n}' for o, n in rn['jhname'].items()))
+    if rn.get('dept'): bl.append('모집단위명 변경(2027→2028): ' + ', '.join(f'{o} → {n}' for o, n in rn['dept'].items()))
+    if new or split or gone or rn.get('jhname') or rn.get('dept'):
         sections.append({'title': '신설·분리·개편', 'icon': '✨', 'bullets': bl,
                          'caption': '신설·분리 단위는 전년 입결이 없다 — 첫해 변동성이 크다.'})
 
@@ -167,6 +174,13 @@ def build_uni(u, rows, snap_rows, tier):
     out = {'headline': headline, 'tags': tags, 'oneLine': oneLine, 'sections': sections, 'verdict': v}
     if tier: out['tier'] = tier
     return out, tot28
+
+# rename28.json — 2027 이름 → 2028 이름(레이어 C). 어댑터가 2027 스냅을 색인할 때 쓰는 사전과 같은 파일이다.
+_RENP = os.path.join(HERE, 'tools', 'plan28', 'rename28.json')
+REN = {u: m for u, m in (json.load(open(_RENP, encoding='utf-8')) if os.path.exists(_RENP) else {}).items() if not u.startswith('_')}
+def ren27(u, d, jn):
+    m = REN.get(u, {}); return m.get('dept', {}).get(d, d), m.get('jhname', {}).get(jn, jn)
+
 
 def main():
     meta, rows = load_data()

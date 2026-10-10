@@ -23,6 +23,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, '..', '입결 및 인사이트', '2028_수시정시_35개대_의치약한수_260608.xlsx')
 OUT = os.path.join(HERE, '..', '입결 및 인사이트', '2028학년도 수시지원의 모든 것_전형계획기준_v1.xlsx')
 SNAP = os.path.join(HERE, 'snap27.json')
+RENAME = os.path.join(HERE, 'tools', 'plan28', 'rename28.json')      # 2027 전형명 → 2028 전형명 (시행계획 PDF 근거)
+SUPP = os.path.join(HERE, 'tools', 'plan28', 'supplement28.json')    # 2028 엑셀이 빠뜨린 행 (시행계획 PDF 모집단위표 근거)
 
 s = lambda v: '' if v is None else str(v).strip()
 nz = lambda t: re.sub(r'\s', '', t or '')
@@ -145,6 +147,12 @@ def docs_abbr(t):
 def main():
     snap = json.load(open(SNAP, encoding='utf-8'))
     R27, LOC27 = snap['rows'], snap['uniLoc']
+    # 전형명 개명(레이어 C) — 2027 쪽을 2028 이름으로 바꿔 색인한다. 안 그러면 개명된 전형의 전 행이 T7 공란이 되어
+    # 파서가 '전형 변경'으로 덮는다(실측 2026-10-10: 서울대 지역균형선발전형→지역균형전형 60행).
+    _ren = {u: m for u, m in (json.load(open(RENAME, encoding='utf-8')) if os.path.exists(RENAME) else {}).items() if not u.startswith('_')}
+    ren = {u: m.get('jhname', {}) for u, m in _ren.items()}       # 전형명 개명
+    ren_d = {u: m.get('dept', {}) for u, m in _ren.items()}       # 모집단위 개명(2027 → 2028 엑셀 표기)
+    ren_used = set()
     uni_set = set(LOC27)
     SIGUN2REG = {}
     for _u, _locs in LOC27.items():
@@ -153,6 +161,10 @@ def main():
     by4, by3, byBB, deptsU = {}, collections.defaultdict(list), collections.defaultdict(list), collections.defaultdict(set)
     for k, v in R27.items():
         u, d, jt, jn = k.split('|')
+        if d in ren_d.get(u, {}): ren_used.add((u, d)); d = ren_d[u][d]
+        if jn in ren.get(u, {}):
+            ren_used.add((u, jn)); jn = ren[u][jn]
+            if (u, key(d), jt, key(jn)) in by4: raise SystemExit(f'[중단] rename28 충돌: {u} {d} {jt} {jn} 가 이미 2027 에 있다')
         by4[(u, key(d), jt, key(jn))] = v
         by3[(u, key(d), key(jn))].append((jt, v))
         byBB[(u, bare(d), bare(jn), '(외)' in jn)].append((jn, v))
@@ -163,6 +175,25 @@ def main():
     groups = collections.OrderedDict()
     for r in raw:
         groups.setdefault((s(r[6]), s(r[9]), s(r[12]), s(r[13])), []).append(r)
+    # ---- 보완 행(레이어 A): 2028 엑셀이 빠뜨린 모집단위를 시행계획 PDF 모집단위표 근거로 넣는다(tools/plan28/supplement28.json).
+    #      같은 대학·전형의 형제 행(전 단계)을 복사해 공통정보(자격·서류·단계 배수)를 받고, 학과·인원·(명시 시) 전형방법·최저만 바꾼다.
+    #      실측(2026-10-10): 서울대 음대·미대·체육교육과 15단위 121명이 2027 엔 있었는데 6/8 엑셀에서 통째로 빠졌다.
+    supp = json.load(open(SUPP, encoding='utf-8'))['rows'] if os.path.exists(SUPP) else []
+    SUPP_METHOD, SUPP_LEAST, SUPP_NOTE = {}, {}, {}
+    for x in supp:
+        sib = next((st for (u28, jn28, _, _), st in groups.items() if u28 == x['uni'] and jn28 == x['jhname']), None)
+        if sib is None: raise SystemExit(f"[중단] supplement28: 형제 행 없음 {x['uni']} {x['jhname']}")
+        gk = (x['uni'], x['jhname'], x['dept'], None)
+        if gk in groups: raise SystemExit(f"[중단] supplement28: 원천에 이미 있음 {gk} — 엑셀이 갱신됐다면 제거할 것")
+        stages = []
+        for r0 in sib:
+            r = list(r0); r[12], r[13], r[15] = x['dept'], None, x['enroll']
+            if 'least' in x: r[64], r[69] = ('N', None) if x['least'] == '없음' else ('Y', x['least'])
+            stages.append(tuple(r))
+        groups[gk] = stages
+        if x.get('method'): SUPP_METHOD[gk] = x['method']
+        if 'least' in x: SUPP_LEAST[gk] = x['least']
+        SUPP_NOTE[gk] = f"모집인원은 2028 시행계획 {x['src']} 기준(6월 엑셀 누락 보완)"
     # 학과 해석 — 2027 학과명으로 환원한다. 직접 일치 > '학부-학과' 하이픈 부분 일치(2028 이 상위 학부를
     # 접두로 붙인 경우: '경영학부-경영학' ↔ 2027 '경영학부', '건축학부-건축공학' ↔ '건축공학전공').
     # 실측(2026-10-09): 신설 671행 중 상당수가 이 꼴이었다 — 신설은 화면에서 강한 신호라 가짜를 두면 안 된다.
@@ -178,17 +209,24 @@ def main():
         return hits.pop() if len(hits) == 1 else None     # 부분이 서로 다른 2027 학과를 가리키면 포기
     # 2028 쪽 (대학, 해석된 학과, 괄호제거 전형명, 정원외) 그룹 크기 — 1:N 합산·하이픈 환원은 2028 이 1행일 때만.
     # 2028 여러 행이 같은 2027 행으로 가면 같은 인원을 중복 비교하게 되므로 금지한다.
-    g28, g28d = collections.Counter(), collections.Counter()
+    # ⚠️ g28d 는 2027 학과 하나로 환원되는 2028 **학과명의 집합**이다. 전형별 그룹 수로 세면 전형이 2개 이상인
+    #    하이픈 학과가 모두 '분리'가 된다(실측 2026-10-10: 서울대 물리천문학부-물리학 지균·일반·기균 3그룹 → 가짜 분리).
+    g28, g28d = collections.Counter(), collections.defaultdict(set)
     for (u28, jn28, dept28, sub28), st in groups.items():
         u = uni27(u28, uni_set); jn = jn28 + ('(외)' if s(st[0][7]) == '정원외' else '')
         rd = resolve_dept(u, dept28)
         g28[(u, rd, bare(jn), '(외)' in jn)] += 1
-        if rd is not None and rd != bare(dept28): g28d[(u, rd)] += 1   # 하이픈 환원으로 같은 2027 학과에 모이는 2028 학과 수
+        if rd is not None and rd != bare(dept28): g28d[(u, rd)].add(dept28)   # 하이픈 환원으로 같은 2027 학과에 모이는 2028 학과들
 
     out, log, matched_k3 = [], collections.Counter(), set()
+    if supp: log['보완 행(시행계획 PDF 모집단위표)'] = len(supp)
+    if ren_used: log['전형명 개명 적용(rename28)'] = len(ren_used)
+    _ren_miss = [(u, o) for mm in (ren, ren_d) for u, m in mm.items() for o in m if (u, o) not in ren_used]
+    if _ren_miss: raise SystemExit(f'[중단] rename28 미적용 {_ren_miss} — 2027 스냅에 그 전형명이 없다. 오타거나 이미 반영됐으면 제거할 것')
     unmatched_least = []
     for (u28, jn28, dept28, sub28), stages in groups.items():
         r = stages[0]
+        gk = (u28, jn28, dept28, sub28)
         uni = uni27(u28, uni_set)
         jtype = s(r[8])
         if jtype == '실기': jtype = '특기자' if '특기자' in jn28 else '실기/실적'
@@ -203,7 +241,7 @@ def main():
         ext = '(외)' in jhname
         rd = resolve_dept(uni, dept28)
         hyph = rd is not None and rd != bare(dept28)                 # 하이픈 환원으로 찾은 학과
-        split = hyph and g28d[(uni, rd)] > 1                          # 2028 학과 둘 이상이 같은 2027 학과로 → 분리
+        split = hyph and len(g28d[(uni, rd)]) > 1                     # 2028 학과 둘 이상이 같은 2027 학과로 → 분리
         m27, tier = None, None
         if (x := by4.get((uni, key(dept28), jtype, key(jhname)))): m27, tier = x, 'T1 정확'
         elif len(c := by3.get((uni, key(dept28), key(jhname)), [])) == 1: m27, tier = c[0][1], 'T2 전형유형 상이'
@@ -240,6 +278,7 @@ def main():
 
         # 최저 — Y/N 과 산문 정규화, 2027 과 다르면 변경사항 합성(parse_choejeo_change 가 읽는 서식)
         least = norm_least(r[69]) if s(r[64]) == 'Y' else '없음'
+        if gk in SUPP_LEAST: least = SUPP_LEAST[gk]                   # 보완 행은 PDF 조항을 그대로 쓴다(정규화 생략)
         if s(r[64]) == 'Y' and not least: least = '없음'; log['최저 Y인데 내용 없음'] += 1
         if s(r[64]) == 'Y' and least != '없음' and not re.search(r'\d합\d|각\d|등급 \d개', least):
             unmatched_least.append(s(r[69]))
@@ -254,6 +293,11 @@ def main():
             elif l27 != '없음' and least == '없음': change = '수능최저 폐지'
             elif h27 and h28 and h27 != h28: change = f'최저: {l27} → {least}'
             elif not h27 and not h28 and nz(l27) != nz(least): change = f'최저: {l27} → {least}'   # 각N 형 등
+        # 개명된 전형은 변경사항에 옛 이름을 남긴다(parse_choejeo_change 는 '최저·합·등급' 없는 구간을 무시한다)
+        _old = next((o for o, n in ren.get(uni, {}).items() if n == jhname), None)
+        if _old: change = (change + ' / ' if change else '') + f'전형명 변경: {_old} → {jhname}'
+        _oldd = next((o for o, n in ren_d.get(uni, {}).items() if n == dept28), None)
+        if _oldd: change = (change + ' / ' if change else '') + f'모집단위명 변경: {_oldd} → {dept28}'
 
         # 소재지 — 2028 소재지 > 한국외대 특례 > 2027 매칭 행 > 2027 대학 최빈
         sigun = s(r[14]) or _HUFS_SIGUN.get(u28) or (m27 and m27.get('sigun')) or LOC27[uni][0]['sigun']
@@ -267,9 +311,9 @@ def main():
         ch = h.get('chung', [''] * 3); sd = h.get('std', [''] * 3)
         out.append([
             region, sigun, uni, s(r[10]), dept, jtype, jhname, s(r[31]), enroll, prev, change,
-            least, method_text(stages), docs_abbr(r[79]), '', grade_ratio(r), s(r[49]), s(r[61]),
+            least, SUPP_METHOD.get(gk) or method_text(stages), docs_abbr(r[79]), '', grade_ratio(r), s(r[49]), s(r[61]),
             c[0], c[1], c[2],
-            sd[0], g[0], v[0], ch[0], '',
+            sd[0], g[0], v[0], ch[0], SUPP_NOTE.get(gk, ''),
             sd[1], g[1], v[1], ch[1],
             sd[2], g[2], v[2], ch[2],
             '',

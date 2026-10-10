@@ -124,12 +124,16 @@ def load_enroll26():
     if blk:
         for m in re.finditer(r"\('([^']+)', '([^']+)', '([^']+)', '([^']+)'\): (\d+)", blk.group(1)):
             ov[tuple(m.group(i) for i in (1, 2, 3, 4))] = int(m.group(5))
+    # rename28.json(레이어 C) — 2027 전형명·모집단위명을 2028 이름으로 바꿔 대조한다(build_ins_2028 와 같은 사전)
+    _rp = os.path.join(HERE, 'tools', 'plan28', 'rename28.json')
+    ren = {u: m for u, m in (json.load(open(_rp, encoding='utf-8')) if os.path.exists(_rp) else {}).items() if not u.startswith('_')}
     out = []
     for k, v in snap.items():
         ps = k.split('|')
         if len(ps) < 4: continue
         e = ov.get(tuple(ps[:4]), v)
-        out.append({'uni': ps[0], 'dept': ps[1].replace('(외)', '').strip(), 'jht': ps[2], 'jhn': ps[3], 'e': e})
+        m = ren.get(ps[0], {}); d = m.get('dept', {}).get(ps[1], ps[1]); jn = m.get('jhname', {}).get(ps[3], ps[3])
+        out.append({'uni': ps[0], 'dept': d.replace('(외)', '').strip(), 'jht': ps[2], 'jhn': jn, 'e': e})
     return out
 
 
