@@ -1,0 +1,11 @@
+{
+ "uni": "서울대학교",
+ "pdf_total": 2496,
+ "ours_total": 2496,
+ "ours_mapped_total": 2496,
+ "same": 213,
+ "differ": [],
+ "only_pdf": [],
+ "only_ours": [],
+ "unmapped_jh": {}
+}
